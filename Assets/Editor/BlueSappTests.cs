@@ -7,6 +7,25 @@ public static class BlueSappTests
  static int checks;
  static void Assert(bool ok,string name){checks++;if(!ok)throw new Exception("FAIL: "+name);}
  public static void Run(){
+  checks=0;
+  var gate=new EncounterGate();
+  Assert(!gate.Ready(10000)&&gate.Count(10000)==0,"encounter waits indefinitely for Return");
+  gate.Confirm(100);
+  Assert(gate.Count(100)==3&&gate.Count(101)==2&&gate.Count(102)==1,"countdown 3 2 1");
+  Assert(!gate.Ready(102.99f)&&gate.Ready(103),"battle starts after full countdown");
+  gate.Confirm(102);
+  Assert(gate.StartsAt==103,"repeat Return does not reset countdown");
+  var first=new RhythmBattle(0,104);
+  Assert(first.Due==106&&!first.Press(1,103,new RpgState()),"first note has three seconds lead after battle start");
+  Assert(RhythmLayout.ActionAt(0)==0&&RhythmLayout.ActionAt(1)==2&&RhythmLayout.ActionAt(2)==1,"keyboard layout F Space J");
+  for(int lane=0;lane<3;lane++){
+   Rect r=RhythmLayout.Lane(lane);
+   Assert(r.xMin>=800&&r.xMax<=1200&&r.yMin>=0&&r.yMax<690,"lane within right panel "+lane);
+   if(lane>0)Assert(RhythmLayout.Lane(lane-1).xMax<r.xMin,"lanes do not overlap "+lane);
+  }
+  Assert(RhythmLayout.NoteY(10,8,false)<RhythmLayout.NoteY(10,9,false),"notes fall downwards");
+  Assert(RhythmLayout.NoteY(10,10,false)==RhythmLayout.Target&&RhythmLayout.NoteY(10,10,true)==RhythmLayout.Target,"armor preserves judgment time");
+  Assert(Math.Abs(RhythmLayout.NoteY(10,8.1f,true)-RhythmLayout.NoteY(10,8,true))<Math.Abs(RhythmLayout.NoteY(10,8.1f,false)-RhythmLayout.NoteY(10,8,false)),"armor slows visual travel");
   var w=new RpgWorld();Assert(w.Encounter()==0,"entry tutorial");w.Turn(-1);Assert(!w.Move(1),"wall blocks");w.Turn(1);Assert(w.Move(1)&&w.state.x==2,"forward move");Assert(w.Move(-1)&&w.state.x==1,"backward move");
   w.state.x=5;w.state.y=5;w.state.direction=1;Assert(!w.Move(1),"closed door blocks");Assert(w.Open()&&w.Move(1),"open door");
   Assert(RhythmBattle.InWindow(.19f)&&!RhythmBattle.InWindow(.21f),"timing boundary");
