@@ -5,15 +5,15 @@ using UnityEngine;
 public static class RhythmLayout
 {
     public const float Top = 90, Target = 650;
-    public static int ActionAt(int lane)
+    public static int ActionAt(int lane,int floor=1)
     {
-        switch (lane) { case 0: return 0; case 1: return 2; case 2: return 1;
-            default: throw new ArgumentOutOfRangeException(nameof(lane)); }
+        var actions=FloorKeys.Actions(floor);
+        if(lane<0||lane>=actions.Length)throw new ArgumentOutOfRangeException(nameof(lane));return actions[lane];
     }
-    public static Rect Lane(int lane)
+    public static Rect Lane(int lane,int floor=1)
     {
-        ActionAt(lane);
-        return new Rect(818 + lane * 126, Top, 116, Target - Top);
+        ActionAt(lane,floor);float stride=378f/FloorKeys.Actions(floor).Length;
+        return new Rect(818 + lane * stride, Top, stride-6, Target - Top);
     }
     public static float NoteY(float due, float now, bool armor)
         => Target - (due - now) * (Target - Top) / (armor ? 3 : 2);

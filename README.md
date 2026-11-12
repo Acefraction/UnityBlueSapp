@@ -34,3 +34,8 @@ Unityをbatchmodeで起動し`-executeMethod BlueSappTests.Run`を指定する�
 実行版の`-bluesapp-smoke`は探索／戦闘状態へ切り替えて終了する診断用モード。非表示ウィンドウではPNGが黒くなるため、画像による見た目の合格判定には使わない。
 
 詳細は[SPEC.md](SPEC.md)。
+
+## 第二〜四層（仮配置）
+横幅13→16→19→23、高さ11。ボス撃破後のReturnで次層へ進む。街からは現在層へ再出発。
+戦闘キーは第一層F/SPACE/J、第二層D/F/SPACE/J/K、第三層S/D/F/SPACE/J/K/L、第四層A/S/D/F/SPACE/J/K/L/;。左手側は防御、右手側は攻撃。譜面のSPはSPACE。
+後続層は既存ロボを使う仮配置。テーマ・固有部品・CGは未追加。

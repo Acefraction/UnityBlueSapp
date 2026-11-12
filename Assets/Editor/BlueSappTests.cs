@@ -35,6 +35,34 @@ public static class BlueSappTests
   w.state.armor=true;w.state.hp=0;w.Town();Assert(w.state.hp==w.state.MaxHp&&w.state.armor,"town restores hp preserves armor");w.state.Gain(10);Assert(w.state.level==2&&w.state.MaxHp==48,"level up");
   var copy=JsonUtility.FromJson<RpgState>(JsonUtility.ToJson(w.state));Assert(copy.armor&&copy.level==2&&copy.x==1,"save serialization roundtrip");
   foreach(var target in new[]{new Vector2Int(3,5),new Vector2Int(11,9)}){var q=new Queue<Vector2Int>();var seen=new HashSet<Vector2Int>();q.Enqueue(new Vector2Int(1,1));while(q.Count>0){var p=q.Dequeue();if(!seen.Add(p))continue;for(int i=0;i<4;i++){var n=p+new Vector2Int(RpgWorld.Dx[i],RpgWorld.Dy[i]);if(!w.Wall(n.x,n.y)&&!seen.Contains(n))q.Enqueue(n);}}Assert(seen.Contains(target),"map target reachable "+target);}
+  for(int floor=1;floor<=4;floor++){
+   var maze=new RpgWorld();maze.SetFloor(floor);
+   Assert(maze.Width==new[]{13,16,19,23}[floor-1]&&maze.Height==11,"floor dimensions "+floor);
+   var q=new Queue<Vector2Int>();var visited=new HashSet<Vector2Int>();q.Enqueue(new Vector2Int(1,1));
+   while(q.Count>0){var p=q.Dequeue();if(!visited.Add(p))continue;for(int d=0;d<4;d++){var n=p+new Vector2Int(RpgWorld.Dx[d],RpgWorld.Dy[d]);if(!maze.Wall(n.x,n.y)&&!visited.Contains(n))q.Enqueue(n);}}
+   Assert(visited.Contains(maze.BossPosition)&&visited.Contains(new Vector2Int(5,3))&&visited.Contains(new Vector2Int(9,7)),"boss and enemies reachable "+floor);
+   var actions=FloorKeys.Actions(floor);Assert(actions.Length==floor*2+1,"key count "+floor);
+   string names="";foreach(int action in actions)names+=FloorKeys.Name(action);
+   Assert(names==new[]{"FSPJ","DFSPJK","SDFSPJKL","ASDFSPJKL;"}[floor-1],"physical keyboard order "+floor);
+   var fight=new RhythmBattle(3,0,floor);
+   foreach(int action in actions)Assert(Array.IndexOf(fight.pattern,action)>=0,"chart includes action "+action+" floor "+floor);
+   for(int lane=0;lane<actions.Length;lane++){
+    Rect rect=RhythmLayout.Lane(lane,floor);Assert(rect.xMin>=800&&rect.xMax<=1200&&rect.width>30,"lane fits "+floor+"/"+lane);
+    if(lane>0)Assert(RhythmLayout.Lane(lane-1,floor).xMax<rect.xMin,"no overlap "+floor+"/"+lane);
+   }
+   var player=new RpgState();int before=player.hp;
+   for(int i=0;i<fight.pattern.Length;i++)Assert(fight.Press(fight.Key,fight.Due,player),"new chart key accepted "+floor+"/"+i);
+   Assert(player.hp>0&&fight.hp<fight.maxHp,"full chart deals damage and survives "+floor);
+   maze.state.x=maze.BossPosition.x;maze.state.y=maze.BossPosition.y;
+   Assert(maze.Encounter()==3&&!maze.Advance(),"uncleared boss gates descent "+floor);
+   maze.Win(3);Assert(maze.Encounter()==-1&&maze.Cleared,"boss flag per floor "+floor);
+   var saved=JsonUtility.FromJson<RpgState>(JsonUtility.ToJson(maze.state));Assert(saved.floor==floor&&(saved.clearedFloors&(1<<(floor-1)))!=0,"floor save roundtrip "+floor);
+   Assert(maze.Advance()==(floor<4),"descent and final floor boundary "+floor);
+   if(floor<4)Assert(!maze.Cleared&&maze.state.x==1&&maze.seen.GetLength(0)==maze.Width,"new floor resets exploration without boss flag leak");
+  }
+  Assert(FloorKeys.Key(8)==KeyCode.Semicolon&&FloorKeys.Kind(8)==1,"semicolon is attack");
+  var legacy=JsonUtility.FromJson<RpgState>("{\"version\":1,\"boss\":true,\"level\":1}");
+  var oldWorld=new RpgWorld{state=legacy};oldWorld.SetFloor(1);Assert(oldWorld.Advance()&&oldWorld.state.floor==2,"old cleared save unlocks second floor");
   BlueSappBuild.Prepare(); Debug.Log("BLUESAPP TESTS PASSED: "+checks);
  }
 }
