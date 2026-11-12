@@ -8,6 +8,14 @@ public static class BlueSappTests
  static void Assert(bool ok,string name){checks++;if(!ok)throw new Exception("FAIL: "+name);}
  public static void Run(){
   checks=0;
+  using(var font=new MisakiFont(System.IO.Path.Combine(Application.streamingAssetsPath,"Misaki"))){
+   foreach(char c in "日本語戦闘防御回避階層やられてしまった・・・↑→↓←FJ; SPACE")Assert(font.Lookup(c.ToString()).character==c.ToString(),"font contains "+c);
+   Assert(font.Width("FJ")==16&&font.Width("日本")==32,"half and full glyph widths");
+   Assert(font.Width("F\n日本")==32&&font.Width("F\r\n日本")==32,"multiline width and CRLF");
+   Assert(font.Width("")==0&&font.Width("日本",4)==64,"empty and title scale");
+   Assert(font.Lookup("not-a-glyph").character=="?","missing glyph fallback");
+   Assert(MisakiFont.IsInk(new Color32(0,0,0,255))&&!MisakiFont.IsInk(new Color32(255,255,255,255))&&!MisakiFont.IsInk(new Color32(0,0,0,0)),"font mask ink white background transparent");
+  }
   var gate=new EncounterGate();
   Assert(!gate.Ready(10000)&&gate.Count(10000)==0,"encounter waits indefinitely for Return");
   gate.Confirm(100);

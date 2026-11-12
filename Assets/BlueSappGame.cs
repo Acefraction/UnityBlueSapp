@@ -8,7 +8,7 @@ public sealed class BlueSappGame : MonoBehaviour
     EncounterGate gate;
     int pendingEnemy;
     Mode mode; RpgWorld world=new RpgWorld(); RhythmBattle battle;
-    bool map; int choice; string message=""; GUIStyle text,big; Font font;
+    bool map; int choice; string message=""; MisakiFont bitmapFont;
     Texture2D pixel; AudioSource music,sfx; float nextBeat; int beat;
     string SavePath=>Path.Combine(Application.persistentDataPath,"bluesapp.json");
     static readonly Color Cyan=new Color(0.2f,0.9f,1), Blue=new Color(0.05f,0.1f,0.65f);
@@ -16,7 +16,7 @@ public sealed class BlueSappGame : MonoBehaviour
     System.Collections.IEnumerator Start() { if(Array.IndexOf(Environment.GetCommandLineArgs(),"-bluesapp-smoke")<0)yield break; yield return new WaitForSeconds(1); Switch(Mode.Explore);world.state.tutorial=true;world.Reveal();yield return new WaitForEndOfFrame();ScreenCapture.CaptureScreenshot(Path.Combine(Application.dataPath,"../explore.png"));yield return new WaitForSeconds(1);world.state.armor=true;StartBattle(3);yield return new WaitForEndOfFrame();ScreenCapture.CaptureScreenshot(Path.Combine(Application.dataPath,"../battle.png"));yield return new WaitForSeconds(1);Debug.Log("BLUESAPP SMOKE PASSED");Application.Quit(); }
     void Awake() {
         Application.runInBackground=true; Application.targetFrameRate=60; pixel=Texture2D.whiteTexture;
-        font=Font.CreateDynamicFontFromOSFont(new[]{"Yu Gothic","Meiryo","Arial"},20);
+        bitmapFont=new MisakiFont(Path.Combine(Application.streamingAssetsPath,"Misaki"));
         music=gameObject.AddComponent<AudioSource>();sfx=gameObject.AddComponent<AudioSource>(); ChangeMusic();
     }
     AudioClip Tone(float freq,float duration,float volume) {int rate=22050;var data=new float[(int)(rate*duration)];for(int i=0;i<data.Length;i++)data[i]=(Mathf.Sin(2*Mathf.PI*freq*i/rate)>0?1:-1)*volume*Mathf.Min(1,(data.Length-i)/(rate*0.04f));var clip=AudioClip.Create("generated tone",data.Length,1,rate,false);clip.SetData(data,0);return clip;}
@@ -61,8 +61,8 @@ public sealed class BlueSappGame : MonoBehaviour
     void Check(){int id=world.Encounter();if(id>=0)StartBattle(id);else message=world.state.floor==1&&world.state.x==3&&world.state.y==5&&!world.state.armor?"外装パーツがある。Enterで装着。":world.state.x==1&&world.state.y==1?"Enterで街に戻る。":"矢印:移動・旋回  Enter:調べる  M:地図";}
     void Box(float x,float y,float w,float h,Color c){GUI.color=c;GUI.DrawTexture(new Rect(x,y,w,h),pixel);GUI.color=Color.white;}
     void Line(float x,float y,float x2,float y2,Color c){var save=GUI.matrix;Vector2 d=new Vector2(x2-x,y2-y);GUIUtility.RotateAroundPivot(Mathf.Atan2(d.y,d.x)*Mathf.Rad2Deg,new Vector2(x,y));Box(x,y,d.magnitude,2,c);GUI.matrix=save;}
-    void Label(float x,float y,string s,bool large=false){GUI.Label(new Rect(x,y,780,200),s,large?big:text);}
-    void OnGUI(){GUI.matrix=Matrix4x4.Scale(new Vector3(Screen.width/1200f,Screen.height/800f,1));if(text==null){text=new GUIStyle(GUI.skin.label){font=font,fontSize=18};text.normal.textColor=Cyan;big=new GUIStyle(text){fontSize=30};}
+    void Label(float x,float y,string s,bool large=false){bitmapFont.Draw(x,y,s,Cyan,large?4:2);}
+    void OnGUI(){GUI.matrix=Matrix4x4.Scale(new Vector3(Screen.width/1200f,Screen.height/800f,1));
         Box(0,0,1200,800,Color.black);if(mode!=Mode.Battle)DrawAndroid();Line(800,0,800,800,Cyan);
         if(mode==Mode.Explore)Dungeon();else if(mode==Mode.Battle)BattleView();else if(mode==Mode.Encounter)EncounterView();else if(mode==Mode.Town)TownView();
         else if(mode==Mode.Title){Label(90,160,"BLUE SAPP",true);Label(90,230,"FRAME / FIRST EXPEDITION");Label(90,340,(choice==0?"> ":"  ")+"はじめから\n"+(choice==1?"> ":"  ")+"つづきから");Label(90,460,message);}
@@ -139,9 +139,10 @@ public sealed class BlueSappGame : MonoBehaviour
                 float due=battle.start+2+i*.75f,y=RhythmLayout.NoteY(due,Time.time,world.state.armor);
                 if(y>=top&&y<target+24)Box(x+4,y-7,width-8,14,color);
             }
-            Box(x,target-2,width,4,color);GUI.Label(new Rect(x,685,width,32),FloorKeys.Name(action),text);
+            Box(x,target-2,width,4,color);bitmapFont.Draw(x+(width-bitmapFont.Width(FloorKeys.Name(action)))/2,685,FloorKeys.Name(action),Cyan);
         }
     }
+    void OnDestroy(){bitmapFont?.Dispose();}
     void MapView(){
         Box(0,0,1200,800,new Color(0,0,.05f,.78f));Label(60,40,$"第{world.state.floor}層 AUTOMAP / Mで閉じる");
         float size=Mathf.Min(46,Mathf.Min(1000f/world.Width,580f/world.Height)),left=(1200-world.Width*size)/2;
@@ -149,8 +150,8 @@ public sealed class BlueSappGame : MonoBehaviour
             if(!world.seen[x,y])continue;
             Color c=world.Wall(x,y)?Blue:world.Closed(x,y)?Color.yellow:new Color(.12f,.17f,.23f);
             Box(left+x*size,110+y*size,size-3,size-3,c);
-            if(x==world.BossPosition.x&&y==world.BossPosition.y)GUI.Label(new Rect(left+x*size,110+y*size,size,size),world.Cleared?">":"B",text);
+            if(x==world.BossPosition.x&&y==world.BossPosition.y)bitmapFont.Draw(left+x*size,110+y*size,world.Cleared?">":"B",Cyan);
         }
-        GUI.Label(new Rect(left+world.state.x*size,110+world.state.y*size,size,size),new[]{"↑","→","↓","←"}[world.state.direction],text);
+        bitmapFont.Draw(left+world.state.x*size,110+world.state.y*size,new[]{"↑","→","↓","←"}[world.state.direction],Cyan);
     }
 }

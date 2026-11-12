@@ -35,6 +35,12 @@ Unityをbatchmodeで起動し`-executeMethod BlueSappTests.Run`を指定する�
 
 詳細は[SPEC.md](SPEC.md)。
 
+## 文字表示
+美咲ゴシック第2のPNG版を使用（全角8×8、半角4×8）。通常文字は2倍、見出しは4倍で描画し、OSフォントは使用しない。
+素材と利用条件は`Assets/StreamingAssets/Misaki/`に同梱。Copyright (C) 2002-2021 Num Kadoma。
+UnityKaeShootと同じPNGと文字座標を使用し、`glyphs.json`は元の文字マップをUnityで読み込める配列形式に変換したもの。
+今回の変更は文字のドット化のみ。画面全体の内部解像度固定・共通16色化はまだ実装していない。
+
 ## 第二〜四層（仮配置）
 横幅13→16→19→23、高さ11。ボス撃破後のReturnで次層へ進む。街からは現在層へ再出発。
 戦闘キーは第一層F/SPACE/J、第二層D/F/SPACE/J/K、第三層S/D/F/SPACE/J/K/L、第四層A/S/D/F/SPACE/J/K/L/;。左手側は防御、右手側は攻撃。譜面のSPはSPACE。
